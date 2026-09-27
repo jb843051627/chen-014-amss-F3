@@ -1,6 +1,7 @@
 package com.fc.v2.common.exception;
 
 import com.fc.v2.common.domain.AjaxResult;
+import com.fc.v2.common.exception.amss.AmssBizException;
 import com.fc.v2.common.exception.demo.DemoModeException;
 import com.fc.v2.util.ServletUtils;
 import org.apache.shiro.authz.AuthorizationException;
@@ -109,6 +110,16 @@ public class GlobalExceptionResolver{
         return AjaxResult.error("演示模式，不允许操作");
     }
     
+    /**
+     * 名册业务回执：点名出岔的格子，原样回给页面
+     */
+    @ExceptionHandler(AmssBizException.class)
+    public AjaxResult amssBizException(AmssBizException e)
+    {
+        logger.error("名册业务回执:{}", e.getMessage());
+        return AjaxResult.error(e.getMessage());
+    }
+
     /**
      * 拦截未知的运行时异常
      */
