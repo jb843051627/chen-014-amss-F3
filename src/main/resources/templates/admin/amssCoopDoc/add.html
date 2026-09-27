@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="include :: header('立农机服务组织底档')"/>
+</head>
+<body>
+<form class="layui-form">
+    <div class="mainBox">
+        <div class="main-container">
+            <div class="layui-form-item">
+                <label class="layui-form-label">服务组织全称</label>
+                <div class="layui-input-block">
+                    <input type="text" name="siteName" lay-verify="required" autocomplete="off" class="layui-input"
+                           placeholder="落档时只凭字号核对，不凭名称像不像">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">组织类别</label>
+                <div class="layui-input-block">
+                    <select name="siteType" lay-verify="required">
+                        <option value="">各排各队，请选类别</option>
+                        <option value="农机合作社">农机合作社</option>
+                        <option value="跨区作业队">跨区作业队</option>
+                        <option value="服务公司">服务公司</option>
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">管辖监理站</label>
+                <div class="layui-input-block">
+                    <input type="text" name="roadName" lay-verify="required" class="layui-input"
+                           placeholder="一直写到省—市—县，如：江原省—江原市—临川县">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">一档封顶(亩)</label>
+                <div class="layui-input-inline" style="width:150px;">
+                    <input type="number" step="0.01" min="0" name="th1Max" value="80" class="layui-input">
+                </div>
+                <label class="layui-form-label" style="width:110px;">二档封顶(亩)</label>
+                <div class="layui-input-inline" style="width:150px;">
+                    <input type="number" step="0.01" min="0" name="th2Max" value="200" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">三档封顶(亩)</label>
+                <div class="layui-input-inline" style="width:150px;">
+                    <input type="number" step="0.01" min="0" name="th3Max" value="500" class="layui-input">
+                </div>
+                <div class="layui-form-mid layui-word-aux">三档须一档比一档高</div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">字号</label>
+                <div class="layui-input-block" style="color:#999;line-height:38px;">
+                    底档字号由系统自动给号，立成后在回执上给回，站里不许手工另编。
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="bottom">
+        <div class="button-container">
+            <button type="submit" class="layui-btn layui-btn-normal layui-btn-sm" lay-submit lay-filter="doc-save">
+                <i class="layui-icon layui-icon-ok"></i> 提交立档
+            </button>
+            <button type="reset" class="layui-btn layui-btn-primary layui-btn-sm">
+                <i class="layui-icon layui-icon-refresh"></i> 重置
+            </button>
+        </div>
+    </div>
+</form>
+<th:block th:include="include :: footer"/>
+<script>
+    layui.use(['form', 'jquery'], function () {
+        let form = layui.form, $ = layui.jquery;
+        let MODULE_PATH = rootPath + "/AmssCoopDocController";
+        form.on('submit(doc-save)', function (data) {
+            $.ajax({
+                url: MODULE_PATH + '/add', data: data.field,
+                contentType: 'application/x-www-form-urlencoded', dataType: 'json', type: 'post',
+                success: function (r) {
+                    if (r.code === 200) {
+                        layer.msg(r.msg, {icon: 1, time: 1200}, function () {
+                            parent.layer.close(parent.layer.getFrameIndex(window.name));
+                            parent.layui.table.reload('doc-table');
+                        });
+                    } else {
+                        $('[name="' + r.field + '"]').css('border-color', '#FF5722');
+                        layer.msg(r.msg + (r.field ? '（格：' + r.field + '）' : ''), {icon: 2});
+                    }
+                }
+            });
+            return false;
+        });
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('农机服务组织底档')"/>
+</head>
+<body class="pear-container">
+<div class="layui-card">
+    <div class="layui-card-body">
+        <form class="layui-form" action="">
+            <div class="layui-form-item">
+                <label class="layui-form-label">字号</label>
+                <div class="layui-input-inline"><input type="text" name="siteNo" class="layui-input"></div>
+                <label class="layui-form-label">全称</label>
+                <div class="layui-input-inline"><input type="text" name="siteName" class="layui-input"></div>
+                <label class="layui-form-label">情形</label>
+                <div class="layui-input-inline">
+                    <select name="status">
+                        <option value="">全部</option>
+                        <option value="0">在用</option>
+                        <option value="1">已收回</option>
+                    </select>
+                </div>
+                <button class="pear-btn pear-btn-md pear-btn-primary" lay-submit lay-filter="doc-query">
+                    <i class="layui-icon layui-icon-search"></i> 查询
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="layui-card">
+    <div class="layui-card-body">
+        <table id="doc-table" lay-filter="doc-table"></table>
+    </div>
+</div>
+</body>
+
+<script type="text/html" id="doc-toolbar">
+    <button shiro:hasPermission="amss:amssCoopDoc:add" class="pear-btn pear-btn-primary pear-btn-md" lay-event="add">
+        <i class="layui-icon layui-icon-add-1"></i> 立底档
+    </button>
+</script>
+
+<script type="text/html" id="doc-bar">
+    {{# if(d.status === 0){ }}
+    <button shiro:hasPermission="amss:amssCoopDoc:revoke" class="pear-btn pear-btn-danger pear-btn-sm" lay-event="revoke">收回封口</button>
+    {{# } else { }}
+    <span style="color:#999;">已封口·旧账可查不可挂新</span>
+    {{# } }}
+</script>
+
+<script type="text/html" id="doc-status">
+    {{# if(d.status === 0){ }}<span class="layui-badge layui-bg-green">在用</span>
+    {{# } else { }}<span class="layui-badge">已收回</span>{{# } }}
+</script>
+
+<th:block th:include="include :: footer"/>
+<script>
+    layui.use(['table', 'form'], function () {
+        let table = layui.table, form = layui.form;
+        let MODULE_PATH = rootPath + "/AmssCoopDocController/";
+
+        table.render({
+            elem: '#doc-table', url: MODULE_PATH + 'list', method: 'get', page: true, skin: 'line',
+            toolbar: '#doc-toolbar',
+            cols: [[
+                {field: 'siteNo', title: '底档字号(系统给号)', width: 150},
+                {field: 'siteName', title: '服务组织全称', minWidth: 260},
+                {field: 'siteType', title: '组织类别', width: 120, align: 'center'},
+                {field: 'roadName', title: '管辖监理站(省—市—县)', width: 240},
+                {field: 'th1Max', title: '一档封顶', width: 90, align: 'right'},
+                {field: 'th2Max', title: '二档封顶', width: 90, align: 'right'},
+                {field: 'th3Max', title: '三档封顶', width: 90, align: 'right'},
+                {field: 'status', title: '情形', width: 90, align: 'center', templet: '#doc-status'},
+                {field: 'createBy', title: '建档人', width: 100},
+                {title: '操作', width: 200, align: 'center', toolbar: '#doc-bar'}
+            ]]
+        });
+
+        form.on('submit(doc-query)', function (data) {
+            table.reload('doc-table', {where: data.field, page: {curr: 1}});
+            return false;
+        });
+
+        table.on('toolbar(doc-table)', function (obj) {
+            if (obj.event === 'add') {
+                layer.open({type: 2, title: '立农机服务组织底档', shade: 0.1, area: ['720px', '560px'],
+                    content: MODULE_PATH + 'add'});
+            }
+        });
+
+        table.on('tool(doc-table)', function (obj) {
+            if (obj.event === 'revoke') {
+                layer.confirm('收回后当场封口：新卡不许再往这家名下挂，先前挂过的仍可查。确定收回？',
+                    {icon: 3}, function (idx) {
+                        layer.close(idx);
+                        $.ajax({url: MODULE_PATH + 'revoke/' + obj.data.id, type: 'post', dataType: 'json',
+                            success: function (r) {
+                                layer.msg(r.msg, {icon: r.code === 200 ? 1 : 2});
+                                if (r.code === 200) { table.reload('doc-table'); }
+                            }});
+                    });
+            }
+        });
+    });
+</script>
+</html>

@@ -101,6 +101,17 @@ public class GlobalExceptionResolver{
     }
     
     /**
+     * 业务字段校验不过：回执必须点名列在哪一格出的岔
+     */
+    @ExceptionHandler(BizFieldException.class)
+    public AjaxResult bizFieldException(HttpServletRequest request, BizFieldException e) {
+        logger.warn("业务字段校验失败：{} -> {}", e.getField(), e.getMessage());
+        AjaxResult result = AjaxResult.error(400, e.getMessage());
+        result.put("field", e.getField());
+        return result;
+    }
+
+    /**
      * 演示模式异常
      */
     @ExceptionHandler(DemoModeException.class)

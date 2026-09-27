@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('在机手名录建档卡台账')"/>
+</head>
+<body class="pear-container">
+<div class="layui-card">
+    <div class="layui-card-body">
+        <form class="layui-form" action="">
+            <div class="layui-form-item">
+                <label class="layui-form-label">底档字号</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="siteNo" placeholder="落档凭字号核对" class="layui-input">
+                </div>
+                <label class="layui-form-label">机主</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="ownerName" class="layui-input">
+                </div>
+                <label class="layui-form-label">覆盖程度</label>
+                <div class="layui-input-inline">
+                    <select name="gradeLevel">
+                        <option value="">全部</option>
+                        <option value="1">一档</option>
+                        <option value="2">二档</option>
+                        <option value="3">三档</option>
+                    </select>
+                </div>
+                <button class="pear-btn pear-btn-md pear-btn-primary" lay-submit lay-filter="card-query">
+                    <i class="layui-icon layui-icon-search"></i> 查询
+                </button>
+                <button type="reset" class="pear-btn pear-btn-md">
+                    <i class="layui-icon layui-icon-refresh"></i> 重置
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="layui-card">
+    <div class="layui-card-body">
+        <table id="card-table" lay-filter="card-table"></table>
+    </div>
+</div>
+</body>
+
+<script type="text/html" id="card-toolbar">
+    <button shiro:hasPermission="amss:amssTeamCard:add" class="pear-btn pear-btn-primary pear-btn-md" lay-event="add">
+        <i class="layui-icon layui-icon-add-1"></i> 新立卡
+    </button>
+</script>
+
+<script type="text/html" id="card-bar">
+    <button shiro:hasPermission="amss:amssTeamCard:edit" class="pear-btn pear-btn-sm" lay-event="confirm"
+            {{# if(d.status === 2){ }} disabled {{# } }}>核对</button>
+    <button shiro:hasPermission="amss:amssTeamCard:edit" class="pear-btn pear-btn-sm pear-btn-warming" lay-event="seal"
+            {{# if(d.status !== 1){ }} disabled {{# } }}>压死</button>
+    <button shiro:hasPermission="amss:amssTeamCard:edit" class="pear-btn pear-btn-primary pear-btn-sm" lay-event="edit">
+        <i class="layui-icon layui-icon-edit"></i> 重录
+    </button>
+    <button shiro:hasPermission="amss:amssTeamCard:list" class="pear-btn pear-btn-sm" lay-event="versions">翻版</button>
+    <button shiro:hasPermission="amss:amssTeamCard:remove" class="pear-btn pear-btn-danger pear-btn-sm" lay-event="remove">
+        <i class="layui-icon layui-icon-delete"></i>
+    </button>
+</script>
+
+<script type="text/html" id="grade-tpl">
+    {{# if(d.gradeLevel === 1){ }}<span class="pear-btn pear-btn-sm pear-btn-normal pear-btn-disabled">一档</span>
+    {{# } else if(d.gradeLevel === 2){ }}<span class="pear-btn pear-btn-sm pear-btn-warming pear-btn-disabled">二档</span>
+    {{# } else if(d.gradeLevel === 3){ }}<span class="pear-btn pear-btn-sm pear-btn-danger pear-btn-disabled">三档</span>
+    {{# } else { }}<span>-</span>{{# } }}
+</script>
+
+<script type="text/html" id="status-tpl">
+    {{# if(d.status === 0){ }}<span class="layui-badge layui-bg-gray">待核对</span>
+    {{# } else if(d.status === 1){ }}<span class="layui-badge layui-bg-blue">已核对</span>
+    {{# } else { }}<span class="layui-badge">已压死</span>{{# } }}
+</script>
+
+<th:block th:include="include :: footer"/>
+<script>
+    layui.use(['table', 'form', 'jquery'], function () {
+        let table = layui.table;
+        let form = layui.form;
+        let $ = layui.jquery;
+        let MODULE_PATH = rootPath + "/AmssTeamCardController/";
+
+        table.render({
+            elem: '#card-table',
+            url: MODULE_PATH + 'list',
+            method: 'get',
+            page: true,
+            skin: 'line',
+            toolbar: '#card-toolbar',
+            cols: [[
+                {field: 'billNo', title: '建档卡号', width: 210},
+                {field: 'nodeNo', title: '版次', width: 60, align: 'center'},
+                {field: 'siteNo', title: '底档字号', width: 90},
+                {field: 'ownerName', title: '机主', width: 90},
+                {field: 'driveCode', title: '准驾', width: 70, align: 'center'},
+                {field: 'workType', title: '作业类别', width: 90, align: 'center'},
+                {field: 'qty', title: '在队面积(亩)', width: 110, align: 'right'},
+                {field: 'fineAmt', title: '本年度新进(亩)', width: 120, align: 'right'},
+                {field: 'gradeLevel', title: '覆盖程度', width: 90, align: 'center', templet: '#grade-tpl'},
+                {field: 'status', title: '进展', width: 90, align: 'center', templet: '#status-tpl'},
+                {field: 'content', title: '核验串', width: 230},
+                {field: 'createBy', title: '创建人', width: 90},
+                {field: 'handler', title: '本趟承办人', width: 100},
+                {title: '操作', width: 250, align: 'center', toolbar: '#card-bar', fixed: 'right'}
+            ]]
+        });
+
+        form.on('submit(card-query)', function (data) {
+            table.reload('card-table', {where: data.field, page: {curr: 1}});
+            return false;
+        });
+
+        table.on('toolbar(card-table)', function (obj) {
+            if (obj.event === 'add') {
+                layer.open({type: 2, title: '在机手名录立建档卡', shade: 0.1, area: ['760px', '640px'],
+                    content: MODULE_PATH + 'add'});
+            }
+        });
+
+        table.on('tool(card-table)', function (obj) {
+            let d = obj.data;
+            if (obj.event === 'remove') {
+                layer.confirm('确定注销这张卡（现行版）？历史各版一并标记注销。', {icon: 3}, function (idx) {
+                    layer.close(idx);
+                    $.ajax({url: MODULE_PATH + "remove?ids=" + d.id, type: 'delete', dataType: 'json',
+                        success: function (r) {
+                            if (r.code === 200) { layer.msg(r.msg, {icon: 1}); table.reload('card-table'); }
+                            else { layer.msg(r.msg, {icon: 2}); }
+                        }});
+                });
+            } else if (obj.event === 'edit') {
+                layer.open({type: 2, title: '重录（旧版让开，另摊新版）', shade: 0.1, area: ['760px', '640px'],
+                    content: MODULE_PATH + 'edit/' + d.id});
+            } else if (obj.event === 'confirm') {
+                $.ajax({url: MODULE_PATH + 'confirm/' + d.id, type: 'post', dataType: 'json',
+                    success: function (r) {
+                        if (r.code === 200) { layer.msg(r.msg, {icon: 1}); table.reload('card-table'); }
+                        else { layer.msg(r.msg, {icon: 2}); }
+                    }});
+            } else if (obj.event === 'seal') {
+                layer.confirm('压死后核验串成形、谁也覆不了。确定压死？', {icon: 3}, function (idx) {
+                    layer.close(idx);
+                    $.ajax({url: MODULE_PATH + 'seal/' + d.id, type: 'post', dataType: 'json',
+                        success: function (r) {
+                            if (r.code === 200) { layer.msg(r.msg, {icon: 1}); table.reload('card-table'); }
+                            else { layer.msg(r.msg + (r.field ? '（格：' + r.field + '）' : ''), {icon: 2}); }
+                        }});
+                });
+            } else if (obj.event === 'versions') {
+                $.ajax({url: MODULE_PATH + 'versions/' + d.id, type: 'get', dataType: 'json',
+                    success: function (r) {
+                        let rows = r.data || [];
+                        let html = '<table class="layui-table" style="margin:10px;width:96%;font-size:13px;">'
+                            + '<tr><th>版次</th><th>底档字号</th><th>面积</th><th>覆盖</th><th>进展</th><th>核验串</th><th>创建人</th><th>承办人</th><th>摊开日期</th></tr>';
+                        rows.forEach(function (v) {
+                            html += '<tr><td>第' + v.nodeNo + '版' + (v.curFlag === 1 ? '（现行）' : '（历史）')
+                                + '</td><td>' + v.siteNo + '</td><td>' + v.qty + '</td><td>' + v.gradeLevel
+                                + '档</td><td>' + ['待核对', '已核对', '已压死'][v.status] + '</td><td>'
+                                + (v.content || '—') + '</td><td>' + (v.createBy || '') + '</td><td>'
+                                + (v.handler || '') + '</td><td>' + (v.createTime || '') + '</td></tr>';
+                        });
+                        html += '</table>';
+                        layer.open({type: 1, title: d.billNo + ' 各版翻检（旧版不删）', area: ['900px', '420px'],
+                            content: html});
+                    }});
+            }
+        });
+    });
+</script>
+</html>
